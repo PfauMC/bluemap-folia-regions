@@ -2,6 +2,9 @@ name: $name
 version: $version
 main: $main
 api-version: "$apiVersion"
+website: https://github.com/PfauMC/bluemap-folia-regions
+authors:
+  - andreypfau
 folia-supported: true
 dependencies:
   server:

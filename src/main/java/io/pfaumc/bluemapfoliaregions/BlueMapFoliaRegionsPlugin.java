@@ -23,7 +23,6 @@ import java.util.*;
 
 public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
     private final int sectionSize = 1 << TickRegions.getRegionChunkShift();
-    ;
     private final Map<String, ScheduledTask> tasks = new HashMap<>();
 
     public static List<Vector2d> getPolygonPoints(List<Long> chunkPositions) {
@@ -176,9 +175,7 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
         return markers;
     }
 
-    private List<Vector2d> getSectionPoints(
-        List<Long> sections
-    ) {
+    private List<Vector2d> getSectionPoints(List<Long> sections) {
         List<Vector2d> points = getPolygonPoints(sections);
         for (int i = 0; i < points.size(); i++) {
             Vector2d point = points.get(i);

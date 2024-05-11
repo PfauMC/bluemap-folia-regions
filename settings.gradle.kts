@@ -1,4 +1,4 @@
-rootProject.name = "paper-plugin-template"
+rootProject.name = "BlueMap-Folia-Regions"
 
 pluginManagement {
     repositories {
