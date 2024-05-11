@@ -25,85 +25,6 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
     private final int sectionSize = 1 << TickRegions.getRegionChunkShift();
     private final Map<String, ScheduledTask> tasks = new HashMap<>();
 
-    public static List<Vector2d> getPolygonPoints(List<Long> chunkPositions) {
-        List<Vector2d> points = new ArrayList<>();
-        for (long chunkPos : chunkPositions) {
-            int x = CoordinateUtils.getChunkX(chunkPos);
-            int z = CoordinateUtils.getChunkZ(chunkPos);
-            points.add(Vector2d.from(x * 16, z * 16));
-            points.add(Vector2d.from(x * 16 + 15, z * 16));
-            points.add(Vector2d.from(x * 16, z * 16 + 15));
-            points.add(Vector2d.from(x * 16 + 15, z * 16 + 15));
-        }
-        return convexHull(points);
-    }
-
-    public static List<Vector2d> convexHull(List<Vector2d> points) {
-        if (points.size() < 3) {
-            return points;
-        }
-
-        HashSet<Vector2d> uniquePoints = new HashSet<>(points);
-        points = uniquePoints.stream().sorted((p1, p2) -> {
-            if (p1.getFloorX() != p2.getFloorX()) {
-                return p1.getFloorX() - p2.getFloorX();
-            }
-            return p1.getFloorY() - p2.getFloorY();
-        }).toList();
-
-        List<Vector2d> upperHull = new ArrayList<>();
-        List<Vector2d> lowerHull = new ArrayList<>();
-
-        for (Vector2d p : points) {
-            while (upperHull.size() >= 2 &&
-                crossProduct(upperHull.get(upperHull.size() - 2), upperHull.get(upperHull.size() - 1), p) >= 0) {
-                upperHull.remove(upperHull.size() - 1);
-            }
-            upperHull.add(p);
-        }
-
-        for (int i = points.size() - 1; i >= 0; i--) {
-            Vector2d p = points.get(i);
-            while (lowerHull.size() >= 2 &&
-                crossProduct(lowerHull.get(lowerHull.size() - 2), lowerHull.get(lowerHull.size() - 1), p) >= 0) {
-                lowerHull.remove(lowerHull.size() - 1);
-            }
-            lowerHull.add(p);
-        }
-
-        upperHull.remove(upperHull.size() - 1);
-        lowerHull.remove(lowerHull.size() - 1);
-
-        upperHull.addAll(lowerHull);
-
-        Vector2d lastPoint = null;
-        upperHull.add(upperHull.get(0));
-
-        List<Vector2d> result = new ArrayList<>();
-        for (Vector2d point : upperHull) {
-            if (lastPoint != null && lastPoint.getFloorX() != point.getFloorX() && lastPoint.getFloorY() != point.getFloorY()) {
-                Vector2d candidate1 = Vector2d.from(lastPoint.getFloorX(), point.getFloorY());
-                if (uniquePoints.contains(candidate1)) {
-                    result.add(candidate1);
-                } else {
-                    Vector2d candidate2 = Vector2d.from(point.getFloorX(), lastPoint.getFloorY());
-                    if (uniquePoints.contains(candidate2)) {
-                        result.add(candidate2);
-                    }
-                }
-            }
-
-            lastPoint = point;
-            result.add(point);
-        }
-        result.remove(result.size() - 1);
-        return result;
-    }
-
-    private static double crossProduct(Vector2d a, Vector2d b, Vector2d c) {
-        return (b.getX() - a.getX()) * (c.getY() - a.getY()) - (b.getY() - a.getY()) * (c.getX() - a.getX());
-    }
-
     @Override
     public void onEnable() {
         BlueMapAPI.onEnable(this::onBlueMapEnable);
@@ -183,5 +104,84 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
             points.set(i, newPoint);
         }
         return points;
+    }
+
+    private static List<Vector2d> getPolygonPoints(List<Long> chunkPositions) {
+        List<Vector2d> points = new ArrayList<>();
+        for (long chunkPos : chunkPositions) {
+            int x = CoordinateUtils.getChunkX(chunkPos);
+            int z = CoordinateUtils.getChunkZ(chunkPos);
+            points.add(Vector2d.from(x * 16, z * 16));
+            points.add(Vector2d.from(x * 16 + 15, z * 16));
+            points.add(Vector2d.from(x * 16, z * 16 + 15));
+            points.add(Vector2d.from(x * 16 + 15, z * 16 + 15));
+        }
+        return convexHull(points);
+    }
+
+    private static List<Vector2d> convexHull(List<Vector2d> points) {
+        if (points.size() < 3) {
+            return points;
+        }
+
+        HashSet<Vector2d> uniquePoints = new HashSet<>(points);
+        points = uniquePoints.stream().sorted((p1, p2) -> {
+            if (p1.getFloorX() != p2.getFloorX()) {
+                return p1.getFloorX() - p2.getFloorX();
+            }
+            return p1.getFloorY() - p2.getFloorY();
+        }).toList();
+
+        List<Vector2d> upperHull = new ArrayList<>();
+        List<Vector2d> lowerHull = new ArrayList<>();
+
+        for (Vector2d p : points) {
+            while (upperHull.size() >= 2 &&
+                crossProduct(upperHull.get(upperHull.size() - 2), upperHull.get(upperHull.size() - 1), p) >= 0) {
+                upperHull.remove(upperHull.size() - 1);
+            }
+            upperHull.add(p);
+        }
+
+        for (int i = points.size() - 1; i >= 0; i--) {
+            Vector2d p = points.get(i);
+            while (lowerHull.size() >= 2 &&
+                crossProduct(lowerHull.get(lowerHull.size() - 2), lowerHull.get(lowerHull.size() - 1), p) >= 0) {
+                lowerHull.remove(lowerHull.size() - 1);
+            }
+            lowerHull.add(p);
+        }
+
+        upperHull.remove(upperHull.size() - 1);
+        lowerHull.remove(lowerHull.size() - 1);
+
+        upperHull.addAll(lowerHull);
+
+        Vector2d lastPoint = null;
+        upperHull.add(upperHull.get(0));
+
+        List<Vector2d> result = new ArrayList<>();
+        for (Vector2d point : upperHull) {
+            if (lastPoint != null && lastPoint.getFloorX() != point.getFloorX() && lastPoint.getFloorY() != point.getFloorY()) {
+                Vector2d candidate1 = Vector2d.from(lastPoint.getFloorX(), point.getFloorY());
+                if (uniquePoints.contains(candidate1)) {
+                    result.add(candidate1);
+                } else {
+                    Vector2d candidate2 = Vector2d.from(point.getFloorX(), lastPoint.getFloorY());
+                    if (uniquePoints.contains(candidate2)) {
+                        result.add(candidate2);
+                    }
+                }
+            }
+
+            lastPoint = point;
+            result.add(point);
+        }
+        result.remove(result.size() - 1);
+        return result;
+    }
+
+    private static double crossProduct(Vector2d a, Vector2d b, Vector2d c) {
+        return (b.getX() - a.getX()) * (c.getY() - a.getY()) - (b.getY() - a.getY()) * (c.getX() - a.getX());
     }
 }
