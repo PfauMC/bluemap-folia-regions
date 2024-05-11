@@ -1,0 +1,4 @@
+name: $name
+version: $version
+main: $main
+api-version: "$apiVersion"
