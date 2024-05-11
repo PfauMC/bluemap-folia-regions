@@ -1,3 +1,3 @@
 # BlueMap Folia Regions
 
-<img width="875" alt="image" src="https://github.com/PfauMC/bluemap-folia-regions/assets/97797573/7b4f3232-de07-4fec-ac6d-9c4c68f8e7be">
+<img width="862" alt="image" src="https://github.com/PfauMC/bluemap-folia-regions/assets/97797573/e384c881-ad78-441b-9106-fc25eb620182">
