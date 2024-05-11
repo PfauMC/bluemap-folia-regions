@@ -2,3 +2,9 @@ name: $name
 version: $version
 main: $main
 api-version: "$apiVersion"
+folia-supported: true
+dependencies:
+  server:
+    BlueMap:
+      load: AFTER
+      required: true

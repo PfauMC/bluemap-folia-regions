@@ -11,10 +11,13 @@ version = project.properties["plugin.version"].toString()
 
 repositories {
     mavenCentral()
+    maven("https://maven.pfaumc.io/snapshots")
+    maven("https://repo.bluecolored.de/releases")
 }
 
 dependencies {
-    paperweight.paperDevBundle(project.properties["paper.version"].toString())
+    compileOnly(paperweight.foliaDevBundle("1.20.6-R0.1-SNAPSHOT"))
+    compileOnly("de.bluecolored.bluemap:BlueMapAPI:2.7.1")
 }
 
 tasks {
@@ -33,6 +36,14 @@ tasks {
         inputs.properties(props)
         filesMatching("paper-plugin.yml") {
             expand(props)
+        }
+    }
+}
+
+runPaper {
+    folia {
+        registerTask {
+            serverJar(file("run/folia-paperclip-1.20.6-R0.1-SNAPSHOT-mojmap.jar"))
         }
     }
 }
