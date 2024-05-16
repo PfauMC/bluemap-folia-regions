@@ -72,6 +72,9 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
             List<Long> sections = entry.getValue();
 
             ChunkPos centerChunk = region.getCenterChunk();
+            if (centerChunk == null) {
+                continue; // dead region, with an empty chunk list
+            }
             String label = "Region@" + region.getData().world.getTypeKey().location().getPath() + "[" + centerChunk.x + "," + centerChunk.z + "]";
 
             List<Vector2d> points = getSectionPoints(sections);
