@@ -11,8 +11,8 @@ pluginManagement {
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
-            plugin("shadow", "com.github.johnrengelman.shadow").version("8.1.1")
-            plugin("paper", "io.papermc.paperweight.userdev").version("1.7.0")
+            plugin("shadow", "com.gradleup.shadow").version("9.0.0-beta6")
+            plugin("paper", "io.papermc.paperweight.userdev").version("2.0.0-beta.14")
             plugin("runpaper", "xyz.jpenilla.run-paper").version("2.3.0")
         }
     }

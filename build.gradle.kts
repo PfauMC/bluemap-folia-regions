@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     java
     idea
@@ -13,11 +15,12 @@ repositories {
     mavenCentral()
     maven("https://maven.pfaumc.io/snapshots")
     maven("https://repo.bluecolored.de/releases")
+    maven("https://folia-inquisitors.github.io/FoliaDevBundle")
 }
 
 dependencies {
-    compileOnly(paperweight.foliaDevBundle("1.20.6-R0.1-SNAPSHOT"))
-    compileOnly("de.bluecolored.bluemap:BlueMapAPI:2.7.1")
+    paperweight.foliaDevBundle("1.21.4-R0.1-SNAPSHOT")
+    compileOnly("de.bluecolored:bluemap-api:2.7.3")
 }
 
 tasks {
@@ -43,7 +46,7 @@ tasks {
 runPaper {
     folia {
         registerTask {
-            serverJar(file("run/folia-paperclip-1.20.6-R0.1-SNAPSHOT-mojmap.jar"))
+            serverJar(file("run/folia-paperclip-1.21.4-R0.1-SNAPSHOT-mojmap.jar"))
         }
     }
 }
