@@ -8,16 +8,18 @@ import de.bluecolored.bluemap.api.markers.ShapeMarker;
 import de.bluecolored.bluemap.api.math.Shape;
 import io.papermc.paper.threadedregions.ThreadedRegionizer;
 import io.papermc.paper.threadedregions.ThreadedRegionizer.ThreadedRegion;
+import io.papermc.paper.threadedregions.TickData;
 import io.papermc.paper.threadedregions.TickRegions;
 import io.papermc.paper.threadedregions.TickRegions.TickRegionData;
 import io.papermc.paper.threadedregions.TickRegions.TickRegionSectionData;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
-import io.papermc.paper.util.CoordinateUtils;
+import io.pfaumc.bluemapfoliaregions.utils.CoordinateUtils;
 import net.minecraft.world.level.ChunkPos;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -33,7 +35,7 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
 
     private void onBlueMapEnable(BlueMapAPI api) {
         for (BlueMapMap map : api.getMaps()) {
-            ScheduledTask task = Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, (t) -> updateRegionMarkets(map), 20, 20 * 5);
+            ScheduledTask task = Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, task1 -> updateRegionMarkets(map), 20, 20 * 5);
             this.tasks.put(map.getId(), task);
         }
     }
@@ -51,7 +53,8 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
     private void updateRegionMarkets(BlueMapMap map) {
         MarkerSet markerSet = MarkerSet.builder().label("Folia Regions").defaultHidden(true).toggleable(true).build();
         String id = map.getWorld().getId();
-        World world = Bukkit.getWorld(UUID.fromString(id));
+        String worldName = id.split("#")[0];
+        World world = Bukkit.getWorld(worldName);
         if (world == null) {
             getLogger().warning("World not found: " + id);
             return;
@@ -81,11 +84,8 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
             Shape shape = new Shape(points);
 
             TickRegions.RegionStats stats = region.getData().getRegionStats();
-
-            String detail = "Sections: " + sections.size() + "\n" +
-                "Chunks: " + stats.getChunkCount() + "\n" +
-                "Entities: " + stats.getEntityCount() + "\n" +
-                "Players: " + stats.getPlayerCount() + "\n";
+            final TickData.TickReportData reportData = region.getData().getRegionSchedulingHandle().getTickReport5s(System.nanoTime());
+            String detail = getDetail(reportData, sections, stats);
 
             ShapeMarker marker = ShapeMarker.builder()
                 .shape(shape, 80)
@@ -97,6 +97,18 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
             markers.put(label, marker);
         }
         return markers;
+    }
+
+    private static @NotNull String getDetail(TickData.TickReportData reportData, List<Long> sections, TickRegions.RegionStats stats) {
+        final TickData.SegmentData tpsData = reportData.tpsData().segmentAll();
+        final double mspt = reportData.timePerTickData().segmentAll().average() / 1.0E6;
+
+        return "Sections: " + sections.size() + "\n" +
+            "Chunks: " + stats.getChunkCount() + "\n" +
+            "Entities: " + stats.getEntityCount() + "\n" +
+            "Players: " + stats.getPlayerCount() + "\n" +
+            "TPS: " + String.format("%.2f", tpsData.average()) + "\n" +
+            "MSPT: " + String.format("%.2f", mspt) + "\n";
     }
 
     private List<Vector2d> getSectionPoints(List<Long> sections) {
