@@ -1,8 +1,10 @@
 package io.pfaumc.bluemapfoliaregions;
 
+import ca.spottedleaf.moonrise.common.util.CoordinateUtils;
 import com.flowpowered.math.vector.Vector2d;
 import de.bluecolored.bluemap.api.BlueMapAPI;
 import de.bluecolored.bluemap.api.BlueMapMap;
+import de.bluecolored.bluemap.api.BlueMapWorld;
 import de.bluecolored.bluemap.api.markers.MarkerSet;
 import de.bluecolored.bluemap.api.markers.ShapeMarker;
 import de.bluecolored.bluemap.api.math.Shape;
@@ -12,7 +14,6 @@ import io.papermc.paper.threadedregions.TickRegions;
 import io.papermc.paper.threadedregions.TickRegions.TickRegionData;
 import io.papermc.paper.threadedregions.TickRegions.TickRegionSectionData;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
-import io.papermc.paper.util.CoordinateUtils;
 import net.minecraft.world.level.ChunkPos;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -20,6 +21,7 @@ import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
+import java.util.Optional;
 
 public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
     private final int sectionSize = 1 << TickRegions.getRegionChunkShift();
@@ -33,7 +35,7 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
 
     private void onBlueMapEnable(BlueMapAPI api) {
         for (BlueMapMap map : api.getMaps()) {
-            ScheduledTask task = Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, (t) -> updateRegionMarkets(map), 20, 20 * 5);
+            ScheduledTask task = Bukkit.getGlobalRegionScheduler().runAtFixedRate(this, (t) -> updateRegionMarkets(api, map), 20, 20 * 5);
             this.tasks.put(map.getId(), task);
         }
     }
@@ -48,12 +50,17 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
         }
     }
 
-    private void updateRegionMarkets(BlueMapMap map) {
+    private void updateRegionMarkets(BlueMapAPI api, BlueMapMap map) {
         MarkerSet markerSet = MarkerSet.builder().label("Folia Regions").defaultHidden(true).toggleable(true).build();
-        String id = map.getWorld().getId();
-        World world = Bukkit.getWorld(UUID.fromString(id));
+        World world = null;
+        for (World w : Bukkit.getWorlds()) {
+            Optional<BlueMapWorld> bmw = api.getWorld(w);
+            if (bmw.isPresent() && bmw.get().getId().equals(map.getWorld().getId())) {
+                world = w;
+                break;
+            }
+        }
         if (world == null) {
-            getLogger().warning("World not found: " + id);
             return;
         }
         ThreadedRegionizer<TickRegionData, TickRegionSectionData> regioniser = ((CraftWorld) world).getHandle().regioniser;
@@ -75,10 +82,10 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
             if (centerChunk == null) {
                 continue; // dead region, with an empty chunk list
             }
-            String label = "Region@" + region.getData().world.getTypeKey().location().getPath() + "[" + centerChunk.x + "," + centerChunk.z + "]";
+            String label = "Region@" + region.getData().world.getTypeKey().identifier().getPath() + "[" + centerChunk.x + "," + centerChunk.z + "]";
 
-            List<Vector2d> points = getSectionPoints(sections);
-            Shape shape = new Shape(points);
+            List<Shape> shapes = computePerimeters(sections);
+            if (shapes.isEmpty()) continue;
 
             TickRegions.RegionStats stats = region.getData().getRegionStats();
 
@@ -87,104 +94,169 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
                 "Entities: " + stats.getEntityCount() + "\n" +
                 "Players: " + stats.getPlayerCount() + "\n";
 
-            ShapeMarker marker = ShapeMarker.builder()
-                .shape(shape, 80)
-                .label(label)
-                .depthTestEnabled(false)
-                .build();
-            marker.setDetail(detail);
-
-            markers.put(label, marker);
+            for (int i = 0; i < shapes.size(); i++) {
+                String markerKey = shapes.size() > 1 ? label + "#" + i : label;
+                ShapeMarker marker = ShapeMarker.builder()
+                    .shape(shapes.get(i), 80)
+                    .label(label)
+                    .depthTestEnabled(false)
+                    .build();
+                marker.setDetail(detail);
+                markers.put(markerKey, marker);
+            }
         }
         return markers;
     }
 
-    private List<Vector2d> getSectionPoints(List<Long> sections) {
-        List<Vector2d> points = getPolygonPoints(sections);
-        for (int i = 0; i < points.size(); i++) {
-            Vector2d point = points.get(i);
-            Vector2d newPoint = Vector2d.from(point.getX() * sectionSize, point.getY() * sectionSize);
-            points.set(i, newPoint);
-        }
-        return points;
-    }
+    /**
+     * Computes perimeter polygons for a set of sections.
+     * Returns one Shape per connected boundary loop.
+     *
+     * Algorithm:
+     * 1. For each section, emit directed boundary edges (clockwise) where no neighbor exists
+     * 2. Chain edges into closed loops using right-turn-first rule at junctions
+     * 3. Remove collinear intermediate points to simplify the polygon
+     */
+    private List<Shape> computePerimeters(List<Long> sections) {
+        if (sections.isEmpty()) return Collections.emptyList();
 
-    private static List<Vector2d> getPolygonPoints(List<Long> chunkPositions) {
-        List<Vector2d> points = new ArrayList<>();
-        for (long chunkPos : chunkPositions) {
-            int x = CoordinateUtils.getChunkX(chunkPos);
-            int z = CoordinateUtils.getChunkZ(chunkPos);
-            points.add(Vector2d.from(x * 16, z * 16));
-            points.add(Vector2d.from(x * 16 + 15, z * 16));
-            points.add(Vector2d.from(x * 16, z * 16 + 15));
-            points.add(Vector2d.from(x * 16 + 15, z * 16 + 15));
-        }
-        return convexHull(points);
-    }
+        // Section size in blocks: sectionSize chunks * 16 blocks/chunk
+        int sectionBlockSize = sectionSize * 16;
 
-    private static List<Vector2d> convexHull(List<Vector2d> points) {
-        if (points.size() < 3) {
-            return points;
-        }
+        Set<Long> sectionSet = new HashSet<>(sections.size() * 2);
+        sectionSet.addAll(sections);
 
-        HashSet<Vector2d> uniquePoints = new HashSet<>(points);
-        points = uniquePoints.stream().sorted((p1, p2) -> {
-            if (p1.getFloorX() != p2.getFloorX()) {
-                return p1.getFloorX() - p2.getFloorX();
+        // Collect boundary edges — directed clockwise around each section
+        // Direction convention: 0=East(+x), 1=South(+z), 2=West(-x), 3=North(-z)
+        int maxEdges = sections.size() * 4;
+        long[] edgeFrom = new long[maxEdges];
+        long[] edgeTo = new long[maxEdges];
+        int[] edgeDir = new int[maxEdges];
+        int edgeCount = 0;
+
+        for (long section : sections) {
+            int sx = CoordinateUtils.getChunkX(section);
+            int sz = CoordinateUtils.getChunkZ(section);
+            int x0 = sx * sectionBlockSize;
+            int z0 = sz * sectionBlockSize;
+            int x1 = x0 + sectionBlockSize;
+            int z1 = z0 + sectionBlockSize;
+
+            // North face → edge goes east
+            if (!sectionSet.contains(ChunkPos.asLong(sx, sz - 1))) {
+                edgeFrom[edgeCount] = packPoint(x0, z0);
+                edgeTo[edgeCount] = packPoint(x1, z0);
+                edgeDir[edgeCount++] = 0;
             }
-            return p1.getFloorY() - p2.getFloorY();
-        }).toList();
-
-        List<Vector2d> upperHull = new ArrayList<>();
-        List<Vector2d> lowerHull = new ArrayList<>();
-
-        for (Vector2d p : points) {
-            while (upperHull.size() >= 2 &&
-                crossProduct(upperHull.get(upperHull.size() - 2), upperHull.get(upperHull.size() - 1), p) >= 0) {
-                upperHull.remove(upperHull.size() - 1);
+            // East face → edge goes south
+            if (!sectionSet.contains(ChunkPos.asLong(sx + 1, sz))) {
+                edgeFrom[edgeCount] = packPoint(x1, z0);
+                edgeTo[edgeCount] = packPoint(x1, z1);
+                edgeDir[edgeCount++] = 1;
             }
-            upperHull.add(p);
+            // South face → edge goes west
+            if (!sectionSet.contains(ChunkPos.asLong(sx, sz + 1))) {
+                edgeFrom[edgeCount] = packPoint(x1, z1);
+                edgeTo[edgeCount] = packPoint(x0, z1);
+                edgeDir[edgeCount++] = 2;
+            }
+            // West face → edge goes north
+            if (!sectionSet.contains(ChunkPos.asLong(sx - 1, sz))) {
+                edgeFrom[edgeCount] = packPoint(x0, z1);
+                edgeTo[edgeCount] = packPoint(x0, z0);
+                edgeDir[edgeCount++] = 3;
+            }
         }
 
-        for (int i = points.size() - 1; i >= 0; i--) {
-            Vector2d p = points.get(i);
-            while (lowerHull.size() >= 2 &&
-                crossProduct(lowerHull.get(lowerHull.size() - 2), lowerHull.get(lowerHull.size() - 1), p) >= 0) {
-                lowerHull.remove(lowerHull.size() - 1);
-            }
-            lowerHull.add(p);
+        if (edgeCount == 0) return Collections.emptyList();
+
+        // Adjacency: from-point → list of edge indices
+        Map<Long, List<Integer>> adj = new HashMap<>(edgeCount);
+        for (int i = 0; i < edgeCount; i++) {
+            adj.computeIfAbsent(edgeFrom[i], k -> new ArrayList<>()).add(i);
         }
 
-        upperHull.remove(upperHull.size() - 1);
-        lowerHull.remove(lowerHull.size() - 1);
+        // Trace closed loops using right-turn-first rule
+        boolean[] used = new boolean[edgeCount];
+        List<Shape> shapes = new ArrayList<>();
 
-        upperHull.addAll(lowerHull);
+        for (int startIdx = 0; startIdx < edgeCount; startIdx++) {
+            if (used[startIdx]) continue;
+            used[startIdx] = true;
 
-        Vector2d lastPoint = null;
-        upperHull.add(upperHull.get(0));
+            List<Long> loop = new ArrayList<>();
+            loop.add(edgeFrom[startIdx]);
+            int curIdx = startIdx;
 
-        List<Vector2d> result = new ArrayList<>();
-        for (Vector2d point : upperHull) {
-            if (lastPoint != null && lastPoint.getFloorX() != point.getFloorX() && lastPoint.getFloorY() != point.getFloorY()) {
-                Vector2d candidate1 = Vector2d.from(lastPoint.getFloorX(), point.getFloorY());
-                if (uniquePoints.contains(candidate1)) {
-                    result.add(candidate1);
-                } else {
-                    Vector2d candidate2 = Vector2d.from(point.getFloorX(), lastPoint.getFloorY());
-                    if (uniquePoints.contains(candidate2)) {
-                        result.add(candidate2);
+            while (true) {
+                long end = edgeTo[curIdx];
+                if (end == edgeFrom[startIdx]) break; // closed loop
+                loop.add(end);
+
+                List<Integer> candidates = adj.get(end);
+                if (candidates == null) break;
+
+                // Right-turn priority: turn right, straight, turn left, U-turn
+                int arrived = edgeDir[curIdx];
+                int[] priority = {(arrived + 1) & 3, arrived, (arrived + 3) & 3, (arrived + 2) & 3};
+
+                int nextIdx = -1;
+                for (int p : priority) {
+                    for (int ci : candidates) {
+                        if (!used[ci] && edgeDir[ci] == p) {
+                            nextIdx = ci;
+                            break;
+                        }
                     }
+                    if (nextIdx >= 0) break;
+                }
+                if (nextIdx < 0) {
+                    for (int ci : candidates) {
+                        if (!used[ci]) {
+                            nextIdx = ci;
+                            break;
+                        }
+                    }
+                }
+                if (nextIdx < 0) break;
+
+                used[nextIdx] = true;
+                curIdx = nextIdx;
+            }
+
+            if (loop.size() < 3) continue;
+
+            // Remove collinear points (all coordinates are multiples of sectionBlockSize, so exact math)
+            int n = loop.size();
+            List<Vector2d> simplified = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                long prev = loop.get((i - 1 + n) % n);
+                long curr = loop.get(i);
+                long next = loop.get((i + 1) % n);
+                long cross = (long) (unpackX(curr) - unpackX(prev)) * (unpackZ(next) - unpackZ(curr)) -
+                             (long) (unpackZ(curr) - unpackZ(prev)) * (unpackX(next) - unpackX(curr));
+                if (cross != 0) {
+                    simplified.add(Vector2d.from(unpackX(curr), unpackZ(curr)));
                 }
             }
 
-            lastPoint = point;
-            result.add(point);
+            if (simplified.size() >= 3) {
+                shapes.add(new Shape(simplified));
+            }
         }
-        result.remove(result.size() - 1);
-        return result;
+
+        return shapes;
     }
 
-    private static double crossProduct(Vector2d a, Vector2d b, Vector2d c) {
-        return (b.getX() - a.getX()) * (c.getY() - a.getY()) - (b.getY() - a.getY()) * (c.getX() - a.getX());
+    private static long packPoint(int x, int z) {
+        return (long) x << 32 | (z & 0xFFFFFFFFL);
+    }
+
+    private static int unpackX(long packed) {
+        return (int) (packed >> 32);
+    }
+
+    private static int unpackZ(long packed) {
+        return (int) packed;
     }
 }
