@@ -3,7 +3,6 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     java
     idea
-    alias(libs.plugins.shadow)
     alias(libs.plugins.paper)
     alias(libs.plugins.runpaper)
 }
@@ -13,14 +12,15 @@ version = project.properties["plugin.version"].toString()
 
 repositories {
     mavenCentral()
-    maven("https://maven.pfaumc.io/snapshots")
+    maven("https://maven.canvasmc.io/snapshots")
     maven("https://repo.bluecolored.de/releases")
     maven("https://folia-inquisitors.github.io/FoliaDevBundle")
 }
 
 dependencies {
-    paperweight.foliaDevBundle("1.21.4-R0.1-SNAPSHOT")
     compileOnly("de.bluecolored:bluemap-api:2.7.3")
+    compileOnly("io.canvasmc.canvas:canvas-api:1.21.11-R0.1-SNAPSHOT")
+    paperweight.devBundle("io.canvasmc.canvas", "1.21.11-R0.1-SNAPSHOT")
 }
 
 tasks {
@@ -39,14 +39,6 @@ tasks {
         inputs.properties(props)
         filesMatching("paper-plugin.yml") {
             expand(props)
-        }
-    }
-}
-
-runPaper {
-    folia {
-        registerTask {
-            serverJar(file("run/folia-paperclip-1.21.4-R0.1-SNAPSHOT-mojmap.jar"))
         }
     }
 }
