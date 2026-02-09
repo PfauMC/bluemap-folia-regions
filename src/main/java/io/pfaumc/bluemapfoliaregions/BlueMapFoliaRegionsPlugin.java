@@ -1,16 +1,15 @@
 package io.pfaumc.bluemapfoliaregions;
 
+import ca.spottedleaf.moonrise.common.time.TickData;
 import ca.spottedleaf.moonrise.common.util.CoordinateUtils;
 import com.flowpowered.math.vector.Vector2d;
 import de.bluecolored.bluemap.api.BlueMapAPI;
 import de.bluecolored.bluemap.api.BlueMapMap;
-import de.bluecolored.bluemap.api.BlueMapWorld;
 import de.bluecolored.bluemap.api.markers.MarkerSet;
 import de.bluecolored.bluemap.api.markers.ShapeMarker;
 import de.bluecolored.bluemap.api.math.Shape;
 import io.papermc.paper.threadedregions.ThreadedRegionizer;
 import io.papermc.paper.threadedregions.ThreadedRegionizer.ThreadedRegion;
-import io.papermc.paper.threadedregions.TickData;
 import io.papermc.paper.threadedregions.TickRegions;
 import io.papermc.paper.threadedregions.TickRegions.TickRegionData;
 import io.papermc.paper.threadedregions.TickRegions.TickRegionSectionData;
@@ -23,7 +22,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.Optional;
 
 public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
     private final int sectionSize = 1 << TickRegions.getRegionChunkShift();
@@ -86,7 +84,7 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
             if (shapes.isEmpty()) continue;
 
             TickRegions.RegionStats stats = region.getData().getRegionStats();
-            final TickData.TickReportData reportData = region.getData().getRegionSchedulingHandle().getTickReport5s(System.nanoTime());
+            TickData.TickReportData reportData = region.getData().getRegionSchedulingHandle().getTickReport5s(System.nanoTime());
             String detail = getDetail(reportData, sections, stats);
 
             for (int i = 0; i < shapes.size(); i++) {
