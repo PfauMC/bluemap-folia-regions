@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     java
     idea
@@ -12,10 +14,11 @@ repositories {
     mavenCentral()
     maven("https://maven.canvasmc.io/snapshots")
     maven("https://repo.bluecolored.de/releases")
+    maven("https://folia-inquisitors.github.io/FoliaDevBundle")
 }
 
 dependencies {
-    compileOnly("de.bluecolored.bluemap:BlueMapAPI:2.7.1")
+    compileOnly("de.bluecolored:bluemap-api:2.7.3")
     compileOnly("io.canvasmc.canvas:canvas-api:1.21.11-R0.1-SNAPSHOT")
     paperweight.devBundle("io.canvasmc.canvas", "1.21.11-R0.1-SNAPSHOT")
 }

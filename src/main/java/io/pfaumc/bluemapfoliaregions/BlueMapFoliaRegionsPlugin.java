@@ -10,6 +10,7 @@ import de.bluecolored.bluemap.api.markers.ShapeMarker;
 import de.bluecolored.bluemap.api.math.Shape;
 import io.papermc.paper.threadedregions.ThreadedRegionizer;
 import io.papermc.paper.threadedregions.ThreadedRegionizer.ThreadedRegion;
+import io.papermc.paper.threadedregions.TickData;
 import io.papermc.paper.threadedregions.TickRegions;
 import io.papermc.paper.threadedregions.TickRegions.TickRegionData;
 import io.papermc.paper.threadedregions.TickRegions.TickRegionSectionData;
@@ -19,6 +20,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.Optional;
@@ -52,14 +54,10 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
 
     private void updateRegionMarkets(BlueMapAPI api, BlueMapMap map) {
         MarkerSet markerSet = MarkerSet.builder().label("Folia Regions").defaultHidden(true).toggleable(true).build();
-        World world = null;
-        for (World w : Bukkit.getWorlds()) {
-            Optional<BlueMapWorld> bmw = api.getWorld(w);
-            if (bmw.isPresent() && bmw.get().getId().equals(map.getWorld().getId())) {
-                world = w;
-                break;
-            }
-        }
+        String id = map.getWorld().getId();
+        String worldName = id.split("#")[0];
+        World world = Bukkit.getWorld(worldName);
+
         if (world == null) {
             return;
         }
@@ -88,11 +86,8 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
             if (shapes.isEmpty()) continue;
 
             TickRegions.RegionStats stats = region.getData().getRegionStats();
-
-            String detail = "Sections: " + sections.size() + "\n" +
-                "Chunks: " + stats.getChunkCount() + "\n" +
-                "Entities: " + stats.getEntityCount() + "\n" +
-                "Players: " + stats.getPlayerCount() + "\n";
+            final TickData.TickReportData reportData = region.getData().getRegionSchedulingHandle().getTickReport5s(System.nanoTime());
+            String detail = getDetail(reportData, sections, stats);
 
             for (int i = 0; i < shapes.size(); i++) {
                 String markerKey = shapes.size() > 1 ? label + "#" + i : label;
@@ -106,6 +101,18 @@ public class BlueMapFoliaRegionsPlugin extends JavaPlugin {
             }
         }
         return markers;
+    }
+
+    private static @NotNull String getDetail(TickData.TickReportData reportData, List<Long> sections, TickRegions.RegionStats stats) {
+        final TickData.SegmentData tpsData = reportData.tpsData().segmentAll();
+        final double mspt = reportData.timePerTickData().segmentAll().average() / 1.0E6;
+
+        return "Sections: " + sections.size() + "\n" +
+            "Chunks: " + stats.getChunkCount() + "\n" +
+            "Entities: " + stats.getEntityCount() + "\n" +
+            "Players: " + stats.getPlayerCount() + "\n" +
+            "TPS: " + String.format("%.2f", tpsData.average()) + "\n" +
+            "MSPT: " + String.format("%.2f", mspt) + "\n";
     }
 
     /**
