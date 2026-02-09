@@ -2,7 +2,7 @@
 
 A Paper plugin that visualizes [Folia](https://github.com/PaperMC/Folia)'s threaded tick regions on [BlueMap](https://bluemap.bluecolored.de/)'s web map in real time.
 
-<img width="862" alt="image" src="https://github.com/PfauMC/bluemap-folia-regions/assets/97797573/e384c881-ad78-441b-9106-fc25eb620182">
+<img width="862" alt="folia_regions" src="https://github.com/user-attachments/assets/0e6ae120-f303-40a2-b47a-77a4e8627c4f" />
 
 ## Overview
 
