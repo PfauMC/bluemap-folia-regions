@@ -29,6 +29,32 @@ Markers refresh every 5 seconds automatically.
 
 The "Folia Regions" marker set will appear on your BlueMap (hidden by default — toggle it on from the map sidebar).
 
+## Configuration
+
+The plugin writes `plugins/BlueMap-Folia-Regions/config.yml` on first start.
+
+```yaml
+update-interval-seconds: 5
+
+marker-set:
+  key: folia-regions
+  label: Folia Regions
+  default-hidden: true
+  toggleable: true
+
+markers:
+  label-format: "Region@{world}[{center_x},{center_z}]"
+  height: 80
+  fill-color: "#3b82f680"
+  line-color: "#1d4ed8ff"
+  line-width: 2
+```
+
+Set `marker-set.default-hidden` to control whether region markers are shown when BlueMap loads.
+Use `markers.label-format` to control how region names are rendered.
+Available placeholders: `{world}`, `{center_x}`, `{center_z}`, `{sections}`, `{shape_count}`.
+Use `markers.fill-color` for the region box fill and `markers.line-color` / `markers.line-width` for the border.
+
 ## Building
 
 ```bash

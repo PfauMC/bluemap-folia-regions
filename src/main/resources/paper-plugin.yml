@@ -6,6 +6,7 @@ website: https://github.com/PfauMC/bluemap-folia-regions
 authors:
   - andreypfau
 folia-supported: true
+
 dependencies:
   server:
     BlueMap:

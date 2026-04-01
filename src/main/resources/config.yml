@@ -1,0 +1,14 @@
+update-interval-seconds: 5
+
+marker-set:
+  key: folia-regions
+  label: Folia Regions
+  default-hidden: true
+  toggleable: true
+
+markers:
+  label-format: "Region@{world}[{center_x},{center_z}]"
+  height: 80
+  fill-color: "#3b82f680"
+  line-color: "#1d4ed8ff"
+  line-width: 2
