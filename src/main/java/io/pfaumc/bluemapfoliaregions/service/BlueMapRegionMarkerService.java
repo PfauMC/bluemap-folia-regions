@@ -20,10 +20,11 @@ import java.util.Map;
 
 public class BlueMapRegionMarkerService {
     private final JavaPlugin plugin;
-    private final PluginConfiguration configuration;
     private final RegionMarkerFactory markerFactory;
+    private PluginConfiguration configuration;
     private final Map<String, ScheduledTask> tasks = new HashMap<>();
     private final Map<String, MarkerSet> markerSets = new HashMap<>();
+    private BlueMapAPI api;
 
     public BlueMapRegionMarkerService(JavaPlugin plugin, PluginConfiguration configuration, RegionMarkerFactory markerFactory) {
         this.plugin = plugin;
@@ -31,8 +32,12 @@ public class BlueMapRegionMarkerService {
         this.markerFactory = markerFactory;
     }
 
-    public void enable(BlueMapAPI api) {
+    public synchronized void enable(BlueMapAPI api) {
+        this.api = api;
+        clearScheduledState(api, this.configuration.markerSetKey());
+
         for (BlueMapMap map : api.getMaps()) {
+            updateMarkers(map);
             ScheduledTask task = Bukkit.getGlobalRegionScheduler().runAtFixedRate(
                 this.plugin,
                 scheduledTask -> updateMarkers(map),
@@ -43,7 +48,34 @@ public class BlueMapRegionMarkerService {
         }
     }
 
-    public void disable(BlueMapAPI api) {
+    public synchronized void disable(BlueMapAPI api) {
+        clearScheduledState(api, this.configuration.markerSetKey());
+        if (this.api == api) {
+            this.api = null;
+        }
+    }
+
+    public synchronized boolean reload(PluginConfiguration configuration) {
+        PluginConfiguration previousConfiguration = this.configuration;
+        this.configuration = configuration;
+        if (this.api == null) {
+            return false;
+        }
+
+        clearScheduledState(this.api, previousConfiguration.markerSetKey());
+        enable(this.api);
+        return true;
+    }
+
+    public synchronized void shutdown() {
+        if (this.api == null) {
+            return;
+        }
+
+        disable(this.api);
+    }
+
+    private void clearScheduledState(BlueMapAPI api, String markerSetKey) {
         for (ScheduledTask task : this.tasks.values()) {
             task.cancel();
         }
@@ -51,7 +83,7 @@ public class BlueMapRegionMarkerService {
         this.markerSets.clear();
 
         for (BlueMapMap map : api.getMaps()) {
-            map.getMarkerSets().remove(this.configuration.markerSetKey());
+            map.getMarkerSets().remove(markerSetKey);
         }
     }
 

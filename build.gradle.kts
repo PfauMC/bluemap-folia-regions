@@ -35,7 +35,7 @@ tasks {
             "apiVersion" to project.properties["paper.api"],
         )
         inputs.properties(props)
-        filesMatching("paper-plugin.yml") {
+        filesMatching("plugin.yml") {
             expand(props)
         }
     }

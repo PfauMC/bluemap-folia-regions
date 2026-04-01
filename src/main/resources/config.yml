@@ -9,6 +9,6 @@ marker-set:
 markers:
   label-format: "Region@{world}[{center_x},{center_z}]"
   height: 80
-  fill-color: "#3b82f680"
+  fill-color: "#3b82f618"
   line-color: "#1d4ed8ff"
   line-width: 2

@@ -1,0 +1,26 @@
+name: $name
+version: $version
+main: $main
+api-version: "$apiVersion"
+website: https://github.com/PfauMC/bluemap-folia-regions
+authors:
+  - andreypfau
+folia-supported: true
+depend:
+  - BlueMap
+
+commands:
+  bluemapfoliaregions:
+    description: Manage BlueMap Folia Regions
+    usage: "/<command> reload"
+    aliases:
+      - bmfr
+    permission: bluemapfoliaregions.command
+
+permissions:
+  bluemapfoliaregions.command:
+    description: Allows using the base BlueMap Folia Regions command
+    default: op
+  bluemapfoliaregions.reload:
+    description: Allows reloading BlueMap Folia Regions
+    default: op

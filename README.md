@@ -1,6 +1,6 @@
 # BlueMap Folia Regions
 
-A Paper plugin that visualizes [Folia](https://github.com/PaperMC/Folia)'s threaded tick regions on [BlueMap](https://bluemap.bluecolored.de/)'s web map in real time.
+A plugin that visualizes [Folia](https://github.com/PaperMC/Folia)'s threaded tick regions on [BlueMap](https://bluemap.bluecolored.de/)'s web map in real time.
 
 <img width="862" alt="folia_regions" src="https://github.com/user-attachments/assets/0e6ae120-f303-40a2-b47a-77a4e8627c4f" />
 
@@ -45,7 +45,7 @@ marker-set:
 markers:
   label-format: "Region@{world}[{center_x},{center_z}]"
   height: 80
-  fill-color: "#3b82f680"
+  fill-color: "#3b82f618"
   line-color: "#1d4ed8ff"
   line-width: 2
 ```
@@ -54,6 +54,7 @@ Set `marker-set.default-hidden` to control whether region markers are shown when
 Use `markers.label-format` to control how region names are rendered.
 Available placeholders: `{world}`, `{center_x}`, `{center_z}`, `{sections}`, `{shape_count}`.
 Use `markers.fill-color` for the region box fill and `markers.line-color` / `markers.line-width` for the border.
+Run `/bluemapfoliaregions reload` or `/bmfr reload` after editing the config to apply changes without restarting the server.
 
 ## Building
 

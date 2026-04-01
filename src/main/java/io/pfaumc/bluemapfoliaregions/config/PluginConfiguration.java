@@ -24,7 +24,7 @@ public record PluginConfiguration(
             config.getString("markers.label-format", "Region@{world}[{center_x},{center_z}]"),
             Math.max(20, config.getInt("update-interval-seconds", 5) * 20),
             config.getInt("markers.height", 80),
-            parseColor(config.getString("markers.fill-color", "#3b82f680")),
+            parseColor(config.getString("markers.fill-color", "#3b82f618")),
             parseColor(config.getString("markers.line-color", "#1d4ed8ff")),
             Math.max(1, config.getInt("markers.line-width", 2))
         );
