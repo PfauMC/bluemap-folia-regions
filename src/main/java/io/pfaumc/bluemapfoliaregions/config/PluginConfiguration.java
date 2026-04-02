@@ -42,7 +42,7 @@ public record PluginConfiguration(
                 Integer.parseInt(normalized.substring(0, 2), 16),
                 Integer.parseInt(normalized.substring(2, 4), 16),
                 Integer.parseInt(normalized.substring(4, 6), 16),
-                Integer.parseInt(normalized.substring(6, 8), 16)
+                (Integer.parseInt(normalized.substring(6, 8), 16) / 100f)
             );
             default -> throw new IllegalArgumentException("invalid color value: " + value + " expected #RRGGBB or #RRGGBBAA");
         };
