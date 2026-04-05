@@ -1,0 +1,16 @@
+update-interval-seconds: 5
+
+marker-set:
+  key: folia-regions
+  label: Folia Regions
+  default-hidden: false
+  toggleable: true
+
+markers:
+  label-format: "Region@{world}[{center_x},{center_z}]"
+  height: 80
+  # First six is the hex color, the second two numbers are the alpha
+  # So 0x3b82f615 is #3b82f615 with 15% opacity
+  fill-color: "#3b82f615"
+  line-color: "#1d4ed8ff"
+  line-width: 2
